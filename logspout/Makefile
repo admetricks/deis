@@ -1,8 +1,14 @@
 include ../includes.mk
 
-COMPONENT := logspout
+# the filepath to this repository, relative to $GOPATH/src
+repo_path = github.com/deis/deis/logspout
+
+GO_FILES = attacher.go logspout.go routes.go types.go
+GO_PACKAGES = utils
+GO_PACKAGES_REPO_PATH = $(addprefix $(repo_path)/,$(GO_PACKAGES))
+
+COMPONENT = $(notdir $(repo_path))
 DOCKER_IMAGE := deis/$(COMPONENT)
-BUILD_IMAGE := $(DOCKER_IMAGE)-build
 RELEASE_IMAGE := $(DOCKER_IMAGE):$(BUILD_TAG)
 DEV_DOCKER_IMAGE := $(DEV_REGISTRY)/$(RELEASE_IMAGE)
 
@@ -10,14 +16,13 @@ build: check-docker
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 godep go build -a -v -ldflags '-s' -o image/logspout
 	docker build -t $(RELEASE_IMAGE) image
 
-clean: check-docker check-registry
+clean:
 	rm -rf image/logspout
-	docker rmi $(RELEASE_IMAGE) $(BUILD_IMAGE)
 
-full-clean: check-docker check-registry
+full-clean:
 	docker images -q $(DOCKER_IMAGE) | xargs docker rmi -f
-	docker images -q $(BUILD_IMAGE) | xargs docker rmi -f
 	docker images -q $(DEV_DOCKER_IMAGE) | xargs docker rmi -f
+	docker images -q $(RELEASE_IMAGE) | xargs docker rmi -f
 
 install: check-deisctl
 	deisctl install $(COMPONENT)
@@ -38,7 +43,7 @@ run: install start
 dev-release: push set-image
 
 push: check-registry
-	docker tag $(RELEASE_IMAGE) $(DEV_DOCKER_IMAGE)
+	docker tag -f $(RELEASE_IMAGE) $(DEV_DOCKER_IMAGE)
 	docker push $(DEV_DOCKER_IMAGE)
 
 set-image: check-deisctl
@@ -49,8 +54,6 @@ release:
 
 deploy: build dev-release restart
 
-test: test-unit test-functional
-
 setup-root-gotools:
 	sudo GOPATH=/tmp/tmpGOPATH go get -u -v code.google.com/p/go.tools/cmd/cover
 	sudo GOPATH=/tmp/tmpGOPATH go get -u -v code.google.com/p/go.tools/cmd/vet
@@ -59,12 +62,19 @@ setup-root-gotools:
 setup-gotools:
 	go get -v github.com/golang/lint/golint
 
-test-style:
-	go vet -x ./...
-	-golint ./...
-
-test-unit: test-style
-	@echo no tests
+test: test-style test-unit test-functional
 
 test-functional:
 	@echo no functional tests
+
+test-style:
+# display output, then check
+	$(GOFMT) $(GO_PACKAGES) $(GO_FILES)
+	@$(GOFMT) $(GO_PACKAGES) $(GO_FILES) | read; if [ $$? == 0 ]; then echo "gofmt check failed."; exit 1; fi
+# FIXME: make this mandatory
+	-$(GOVET) $(repo_path) $(GO_PACKAGES_REPO_PATH)
+# FIXME: make this mandatory
+	-$(GOLINT) ./...
+
+test-unit:
+	@echo no unit tests

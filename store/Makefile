@@ -70,15 +70,15 @@ run: install start
 dev-release: push set-image
 
 push: check-registry
-	docker tag $(ADMIN_IMAGE) $(ADMIN_DEV_IMAGE)
+	docker tag -f $(ADMIN_IMAGE) $(ADMIN_DEV_IMAGE)
 	docker push $(ADMIN_DEV_IMAGE)
-	docker tag $(DAEMON_IMAGE) $(DAEMON_DEV_IMAGE)
+	docker tag -f $(DAEMON_IMAGE) $(DAEMON_DEV_IMAGE)
 	docker push $(DAEMON_DEV_IMAGE)
-	docker tag $(GATEWAY_IMAGE) $(GATEWAY_DEV_IMAGE)
+	docker tag -f $(GATEWAY_IMAGE) $(GATEWAY_DEV_IMAGE)
 	docker push $(GATEWAY_DEV_IMAGE)
-	docker tag $(METADATA_IMAGE) $(METADATA_DEV_IMAGE)
+	docker tag -f $(METADATA_IMAGE) $(METADATA_DEV_IMAGE)
 	docker push $(METADATA_DEV_IMAGE)
-	docker tag $(MONITOR_IMAGE) $(MONITOR_DEV_IMAGE)
+	docker tag -f $(MONITOR_IMAGE) $(MONITOR_DEV_IMAGE)
 	docker push $(MONITOR_DEV_IMAGE)
 
 set-image: check-deisctl
@@ -97,11 +97,14 @@ release:
 
 deploy: build dev-release restart
 
-test: test-unit test-functional
-
-test-unit:
-	@echo no unit tests
+test: test-style test-unit test-functional
 
 test-functional:
 	@docker history deis/test-etcd >/dev/null 2>&1 || docker pull deis/test-etcd:latest
 	GOPATH=`cd ../tests/ && godep path`:$(GOPATH) go test -v ./tests/...
+
+test-style:
+	@echo no style tests
+
+test-unit:
+	@echo no unit tests
