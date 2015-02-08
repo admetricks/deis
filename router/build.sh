@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 # fail on any command exiting non-zero
 set -eo pipefail
 
@@ -26,6 +28,8 @@ mkdir $BUILD_PATH
 cd $BUILD_PATH
 
 # install required packages to build
+sed -i 's/http.debian.net/ftp.ca.debian.org/' /etc/apt/sources.list
+
 apt-get update \
   && apt-get install -y patch curl build-essential \
   libpcre3 libpcre3-dev libssl-dev libgeoip-dev zlib1g-dev
@@ -66,5 +70,5 @@ patch -p1 < $BUILD_PATH/nginx_tcp_proxy_module-$VERSION_TCP_PROXY/tcp.patch
   --add-module=$BUILD_PATH/nginx_tcp_proxy_module-$VERSION_TCP_PROXY \
   --add-module=$BUILD_PATH/naxsi-$VERSION_NAXSI/naxsi_src \
   && make && make install
-  
+
 mv /tmp/firewall /opt/nginx/firewall

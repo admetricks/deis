@@ -8,8 +8,8 @@ GO_PACKAGES = logger
 GO_PACKAGES_REPO_PATH = $(addprefix $(repo_path)/,$(GO_PACKAGES))
 
 COMPONENT = $(notdir $(repo_path))
-IMAGE = $(IMAGE_PREFIX)$(COMPONENT):$(BUILD_TAG)
-DEV_IMAGE = $(DEV_REGISTRY)/$(IMAGE)
+IMAGE = $(IMAGE_PREFIX)$(COMPONENT)
+DEV_IMAGE = $(IMAGE)
 BUILD_IMAGE = $(COMPONENT)-build
 
 build: check-docker
